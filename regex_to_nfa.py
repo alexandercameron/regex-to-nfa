@@ -8,8 +8,41 @@ Authors: Alex Cameron, Eli Grady, Erick Perez
 COMP 370, Dr. Glick, USD, Spring 17
 '''
 
-def main():
-    pass
+import sys
+
+def main(input_file):
+
+    parameters = readFile(input_file)
+    print parameters
+    alphabet = parameters['alphabet']
+    regular_expression = parameters['regular_expression']
+    input_strings = parameters['input_strings']
+
+
+def readFile(input_file):
+
+    parameters = {}
+
+    f = open(input_file, 'r')
+
+    parameters['alphabet'] = f.readline().strip("\n")
+
+    parameters['regular_expression'] = f.readline().strip("\n")
+
+    input_strings = {}
+
+    f.readline()
+    string = f.readline().strip("\n")
+
+    i = 0
+    while len(string) > 0:
+        input_strings[i] = string
+        string = f.readline().strip("\n")
+        i = i + 1
+
+    parameters['input_strings'] = input_strings
+
+    return parameters
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1])
