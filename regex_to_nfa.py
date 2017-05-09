@@ -10,14 +10,13 @@ COMP 370, Dr. Glick, USD, Spring 17
 
 import sys
 
-def main(input_file):
+def main(input_file, output_file):
 
     parameters = readFile(input_file)
-    print parameters
+
     alphabet = parameters['alphabet']
     regular_expression = parameters['regular_expression']
     input_strings = parameters['input_strings']
-
 
 def readFile(input_file):
 
@@ -25,9 +24,9 @@ def readFile(input_file):
 
     f = open(input_file, 'r')
 
-    parameters['alphabet'] = f.readline().strip("\n")
+    parameters['alphabet'] = list(f.readline().strip("\n"))
 
-    parameters['regular_expression'] = f.readline().strip("\n")
+    parameters['regular_expression'] = list(f.readline().strip("\n"))
 
     input_strings = {}
 
@@ -45,4 +44,4 @@ def readFile(input_file):
     return parameters
 
 if __name__ == '__main__':
-    main(sys.argv[1])
+    main(sys.argv[1], sys.argv[2])
