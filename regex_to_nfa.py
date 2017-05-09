@@ -10,6 +10,22 @@ COMP 370, Dr. Glick, USD, Spring 17
 
 import sys
 
+class Tree:
+
+    def __init__(self, nodes, root):
+
+        self.nodes = nodes
+        self.root = root
+
+class Node:
+
+    def __init__(self, symbol, left, right):
+
+        self.symbol = symbol
+        self.left = left
+        self.right = right
+
+
 def main(input_file, output_file):
 
     parameters = readFile(input_file)
@@ -17,6 +33,10 @@ def main(input_file, output_file):
     alphabet = parameters['alphabet']
     regular_expression = parameters['regular_expression']
     input_strings = parameters['input_strings']
+
+    parse_tree = make_parse_tree(regular_expression)
+
+
 
 def readFile(input_file):
 
@@ -42,6 +62,85 @@ def readFile(input_file):
     parameters['input_strings'] = input_strings
 
     return parameters
+
+
+def make_parse_tree(regular_expression):
+
+    parse_tree = []
+
+    operators = []
+    operands = []
+
+    for symbol in regular_expression:
+
+        if symbol is '(':
+
+            operators = left_paren(symbol, operators)
+
+        elif symbol is ')':
+
+            right_paren(symbol)
+
+        elif symbol is '*' :
+
+           operator(symbol, operators)
+
+        elif symbol is '|' :
+
+           operator(symbol, operators)
+
+        else:
+
+            operands = operand(symbol, operands)
+
+    return parse_tree
+
+def left_paren(symbol, operators):
+
+    operators.append(symbol)
+    return operators
+
+def right_paren(symbol, operators, operands):
+
+
+    while until_empty_or_left(operators) :
+
+        popped = operators.pop()
+
+        if popped is '*':
+
+            operand_pop = operands.pop()
+            tmp = Node(popped, 0, operand_pop)
+            operands.append(tmp)
+
+        else:
+
+            right_pop = operands.pop()
+            left_pop = operands.pop()
+            tmp = Node(popped,left_pop, right_pop)
+            operands.append(tmp)
+
+
+def until_empty_or_left(operators):
+
+    if operators[0] is '(':
+        return False
+    if len(operators) is 0:
+        return False
+    return True
+
+def operator(symbol, operator):
+
+    if len(operator) is not 0:
+
+        pass
+
+
+def operand(symbol, operands):
+
+    n = Node(symbol, 0, 0)
+    operands.append(n)
+    return operands
 
 if __name__ == '__main__':
     main(sys.argv[1], sys.argv[2])
