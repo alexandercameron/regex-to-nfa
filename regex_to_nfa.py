@@ -34,9 +34,46 @@ def main(input_file, output_file):
     regular_expression = parameters['regular_expression']
     input_strings = parameters['input_strings']
 
+    regular_expression_with_concat = find_concat(regular_expression)
+    print regular_expression_with_concat
     parse_tree = make_parse_tree(regular_expression)
 
 
+def find_concat(regular_expression):
+
+    #these are the characters that you do not need to check if there is a concat following
+    operators = ['|','(','concat']
+
+    #these are the characters that you do not insert a concat in front of after a terminal
+    f_operators = ['|', '*','concat', ')']
+
+    i = 0
+    length = len(regular_expression)
+    while i < length:
+
+        is_op = 0
+        for op in operators:
+
+            if regular_expression[i] is op:
+                is_op = 1
+
+        if is_op is 0:
+
+            is_next_op = 0
+            for op in f_operators:
+                try:
+                    if regular_expression[i+1] is op:
+                        is_next_op = 1
+                except:
+                    is_next_op = 1
+
+            if is_next_op is 0:
+                regular_expression.insert(i+1, 'concat')
+                length = length + 1
+
+        i = i + 1
+
+    return regular_expression
 
 def readFile(input_file):
 
@@ -44,10 +81,9 @@ def readFile(input_file):
 
     f = open(input_file, 'r')
 
-    parameters['alphabet'] = list(f.readline().strip("\n"))
+    parameters['alphabet'] = list(f.readline().strip("\n").replace(" ",""))
 
-    parameters['regular_expression'] = list(f.readline().strip("\n"))
-
+    parameters['regular_expression'] = list(f.readline().strip("\n").replace(" ",""))
     input_strings = {}
 
     f.readline()
@@ -79,7 +115,7 @@ def make_parse_tree(regular_expression):
 
         elif symbol is ')':
 
-            right_paren(symbol)
+            right_paren(symbol, operators, operands)
 
         elif symbol is '*' :
 
@@ -100,8 +136,8 @@ def left_paren(symbol, operators):
     operators.append(symbol)
     return operators
 
-def right_paren(symbol, operators, operands):
 
+def right_paren(symbol, operators, operands):
 
     while until_empty_or_left(operators) :
 
