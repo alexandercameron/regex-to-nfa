@@ -21,6 +21,7 @@ class Node:
 def main(input_file, output_file):
 
     alphabet, regular_expression, input_strings = readFile(input_file)
+    print regular_expression
     parse_tree = make_parse_tree(regular_expression)
 
 def readFile(input_file):
@@ -101,7 +102,7 @@ def make_parse_tree(regular_expression):
 
         elif symbol is ')':
 
-            right_paren(symbol, operators, operands)
+            operands, operators = right_paren(symbol, operators, operands)
 
         elif symbol is '*' :
 
@@ -115,18 +116,16 @@ def make_parse_tree(regular_expression):
 
             operands = operand(symbol, operands)
 
-    for x in operators:
-        print x
-    print "\n"
-    for x in operands:
-        print x.symbol
     return parse_tree
 
+#if a left paren if encountered, put it on the stack
+#this is done
 def left_paren(symbol, operators):
 
     operators.append(symbol)
     return operators
 
+#i think this is done? need to do operator to check...
 def right_paren(symbol, operators, operands):
 
     while until_empty_or_left(operators) :
@@ -148,6 +147,9 @@ def right_paren(symbol, operators, operands):
 
     if len(operators) > 0:
         operators.pop()
+
+    for x in operands:
+        print x.symbol, x.left, x.right
     return operands, operators
 
 def until_empty_or_left(operators):
@@ -164,6 +166,8 @@ def operator(symbol, operator):
 
         pass
 
+#push operand onto stack
+#this is done
 def operand(symbol, operands):
 
     n = Node(symbol, -1, -1)
