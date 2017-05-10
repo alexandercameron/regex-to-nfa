@@ -21,8 +21,9 @@ class Node:
 def main(input_file, output_file):
 
     alphabet, regular_expression, input_strings = readFile(input_file)
-    print regular_expression
+    #print "Regular expression:\n", regular_expression
     parse_tree = make_parse_tree(regular_expression)
+
 
 def readFile(input_file):
 
@@ -46,6 +47,7 @@ def readFile(input_file):
         i = i + 1
 
     return alphabet, regular_expression, input_strings
+
 
 def find_concat(regular_expression):
 
@@ -87,13 +89,14 @@ def find_concat(regular_expression):
 
     return regular_expression
 
+
 def make_parse_tree(regular_expression):
 
     parse_tree = []
 
     operators = []
     operands = []
-
+    i = 1
     for symbol in regular_expression:
 
         if symbol is '(':
@@ -104,15 +107,59 @@ def make_parse_tree(regular_expression):
 
             operands, operators = right_paren(symbol, operators, operands)
 
-        elif symbol is ('*' or '|' or 'concat'):
+        elif symbol == 'concat':
 
-           operators, operands = operator(symbol, operators, operands)
+            operators, operands = operator(symbol, operators, operands)
+
+        elif symbol is '|':
+
+            operators, operands = operator(symbol, operators, operands)
+
+        elif symbol is '*':
+            operators, operands = operator(symbol, operators, operands)
 
         else:
-
             operands = operand(symbol, operands)
 
-    return parse_tree
+
+    operands = empty_operator(operators, operands)
+
+    x = operands[len(operands) - 1]
+    q = [x]
+    bfs(q)
+
+def bfs(q):
+    x = q.pop(0)
+
+    print x.symbol
+    try:
+        x.left.symbol
+        q.append(x.left)
+        print x.left.symbol
+    except:
+        print x.left
+    try:
+        x.right.symbol
+        q.append(x.right)
+        print x.right.symbol
+    except:
+        print x.right
+
+    if len(q) is not 0:
+        bfs(q)
+
+def empty_operator(operators, operands):
+    while len(operators) > 0:
+        popped_op = operators.pop()
+        right_pop = operands.pop()
+        if popped_op is '*':
+            tmp = Node(popped_op, -1, right_pop)
+        else:
+            left_pop = operands.pop()
+            tmp = Node(popped_op, left_pop, right_pop)
+
+        operands.append(tmp)
+    return operands
 
 #if a left paren if encountered, put it on the stack
 #this is done
@@ -120,6 +167,7 @@ def left_paren(symbol, operators):
 
     operators.append(symbol)
     return operators
+
 
 #i think this is done? need to do operator to check...
 def right_paren(symbol, operators, operands):
@@ -147,6 +195,7 @@ def right_paren(symbol, operators, operands):
 
     return operands, operators
 
+
 def until_empty_or_left(operators):
 
     if len(operators) is 0:
@@ -154,6 +203,7 @@ def until_empty_or_left(operators):
     if operators[0] is '(':
         return False
     return True
+
 
 def operator(symbol, operators, operands):
 
@@ -181,18 +231,22 @@ def operator(symbol, operators, operands):
 
     return operators, operands
 
+
 def not_empty_and_precedence(symbol, operator):
     if len(operator) is 0:
         return False
-    if precedence_ge(symbol, operator(len(operator) - 1)) is False:
+    if precedence_ge(symbol, operator[len(operator) - 1]) is False:
         return False
     return True
+
+
 #returns true if top of stack is greater or eq the precedence of scanned
 def precedence_ge(symbol, top_of_stack):
     p = {}
     p['*'] = 3
     p['concat'] = 2
     p['|'] = 1
+    p['('] = 0
 
     if p[top_of_stack] >= p[symbol]:
         return True
