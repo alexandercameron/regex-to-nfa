@@ -18,17 +18,33 @@ class Node:
         self.left = left
         self.right = right
 
-
 def main(input_file, output_file):
 
-    parameters = readFile(input_file)
-
-    alphabet = parameters['alphabet']
-    regular_expression = parameters['regular_expression']
-    input_strings = parameters['input_strings']
-
+    alphabet, regular_expression, input_strings = readFile(input_file)
     parse_tree = make_parse_tree(regular_expression)
 
+def readFile(input_file):
+
+    parameters = {}
+
+    f = open(input_file, 'r')
+
+    alphabet = list(f.readline().strip("\n").replace(" ",""))
+
+    regular_expression = list(f.readline().strip("\n").replace(" ",""))
+    regular_expression = find_concat(regular_expression)
+    input_strings = {}
+
+    f.readline()
+    string = f.readline().strip("\n")
+
+    i = 0
+    while len(string) > 0:
+        input_strings[i] = string
+        string = f.readline().strip("\n")
+        i = i + 1
+
+    return alphabet, regular_expression, input_strings
 
 def find_concat(regular_expression):
 
@@ -70,32 +86,6 @@ def find_concat(regular_expression):
 
     return regular_expression
 
-def readFile(input_file):
-
-    parameters = {}
-
-    f = open(input_file, 'r')
-
-    parameters['alphabet'] = list(f.readline().strip("\n").replace(" ",""))
-
-    parameters['regular_expression'] = list(f.readline().strip("\n").replace(" ",""))
-    parameters['regular_expression'] = find_concat(parameters['regular_expression'])
-    input_strings = {}
-
-    f.readline()
-    string = f.readline().strip("\n")
-
-    i = 0
-    while len(string) > 0:
-        input_strings[i] = string
-        string = f.readline().strip("\n")
-        i = i + 1
-
-    parameters['input_strings'] = input_strings
-
-    return parameters
-
-
 def make_parse_tree(regular_expression):
 
     parse_tree = []
@@ -125,13 +115,17 @@ def make_parse_tree(regular_expression):
 
             operands = operand(symbol, operands)
 
+    for x in operators:
+        print x
+    print "\n"
+    for x in operands:
+        print x.symbol
     return parse_tree
 
 def left_paren(symbol, operators):
 
     operators.append(symbol)
     return operators
-
 
 def right_paren(symbol, operators, operands):
 
@@ -152,6 +146,9 @@ def right_paren(symbol, operators, operands):
             tmp = Node(popped,left_pop, right_pop)
             operands.append(tmp)
 
+    if len(operators) > 0:
+        operators.pop()
+    return operands, operators
 
 def until_empty_or_left(operators):
 
@@ -167,11 +164,12 @@ def operator(symbol, operator):
 
         pass
 
-
 def operand(symbol, operands):
 
     n = Node(symbol, -1, -1)
+
     operands.append(n)
+
     return operands
 
 if __name__ == '__main__':
