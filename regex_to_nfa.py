@@ -21,7 +21,7 @@ class Node:
 def main(input_file, output_file):
 
     alphabet, regular_expression, input_strings = readFile(input_file)
-    #print "Regular expression:\n", regular_expression
+    print "Regular expression:\n", regular_expression
     parse_tree = make_parse_tree(regular_expression)
 
 
@@ -116,17 +116,20 @@ def make_parse_tree(regular_expression):
             operators, operands = operator(symbol, operators, operands)
 
         elif symbol is '*':
+
             operators, operands = operator(symbol, operators, operands)
 
         else:
+
             operands = operand(symbol, operands)
 
 
     operands = empty_operator(operators, operands)
 
-    x = operands[len(operands) - 1]
-    q = [x]
-    bfs(q)
+    q = []
+    for x in operands:
+        q.append(x)
+    #bfs(q)
 
 def bfs(q):
     x = q.pop(0)
@@ -172,14 +175,14 @@ def left_paren(symbol, operators):
 #i think this is done? need to do operator to check...
 def right_paren(symbol, operators, operands):
 
-    while until_empty_or_left(operators) :
+    while until_empty_or_left(operators) is True :
 
         popped = operators.pop()
 
         if popped is '*':
 
             operand_pop = operands.pop()
-            tmp = Node(popped, -1, operand_pop)
+            tmp = Node(popped.symbol, -1, operand_pop)
             operands.append(tmp)
 
         else:
@@ -200,7 +203,7 @@ def until_empty_or_left(operators):
 
     if len(operators) is 0:
         return False
-    if operators[0] is '(':
+    if operators[len(operators)-1] is '(':
         return False
     return True
 
@@ -223,22 +226,26 @@ def operator(symbol, operators, operands):
             tmp = Node(popped, left_pop, right_pop)
         operands.append(tmp)
 
+        operators.append(symbol)
+
     #when either the stack is empty or the top of the stack is not
     #an operator with precedence >= precedence of operator just
     #scanned, push operator just scanned onto the operator stack
     else:
+
         operators.append(symbol)
+
 
     return operators, operands
 
 
 def not_empty_and_precedence(symbol, operator):
+
     if len(operator) is 0:
         return False
     if precedence_ge(symbol, operator[len(operator) - 1]) is False:
         return False
     return True
-
 
 #returns true if top of stack is greater or eq the precedence of scanned
 def precedence_ge(symbol, top_of_stack):
