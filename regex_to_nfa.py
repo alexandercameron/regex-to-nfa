@@ -104,13 +104,9 @@ def make_parse_tree(regular_expression):
 
             operands, operators = right_paren(symbol, operators, operands)
 
-        elif symbol is '*' :
+        elif symbol is ('*' or '|' or 'concat'):
 
-           operator(symbol, operators)
-
-        elif symbol is '|' :
-
-           operator(symbol, operators)
+           operators, operands = operator(symbol, operators, operands)
 
         else:
 
@@ -148,23 +144,60 @@ def right_paren(symbol, operators, operands):
     if len(operators) > 0:
         operators.pop()
 
-    for x in operands:
-        print x.symbol, x.left, x.right
+
     return operands, operators
 
 def until_empty_or_left(operators):
 
-    if operators[0] is '(':
-        return False
     if len(operators) is 0:
+        return False
+    if operators[0] is '(':
         return False
     return True
 
-def operator(symbol, operator):
+def operator(symbol, operators, operands):
 
-    if len(operator) is not 0:
+    #as long as the stack is not empty, and the top of the stack
+    #is an operator whose precedence is >= the precedence of
+    #the operator just scanned...
+    if not_empty_and_precedence(symbol, operators) :
+        #pop the operator off the stack and create a syntax
+        #tree node from it (popping its operands off the operand stack)
+        #and push the new syntax tree node back onto the operand stack
+        popped = operators.pop()
+        right_pop = operands.pop()
+        if popped is '*':
+            tmp = Node(popped, -1, right_pop)
+        else:
+            left_pop = operands.pop()
+            tmp = Node(popped, left_pop, right_pop)
+        operands.append(tmp)
 
-        pass
+    #when either the stack is empty or the top of the stack is not
+    #an operator with precedence >= precedence of operator just
+    #scanned, push operator just scanned onto the operator stack
+    else:
+        operators.append(symbol)
+
+    return operators, operands
+
+def not_empty_and_precedence(symbol, operator):
+    if len(operator) is 0:
+        return False
+    if precedence_ge(symbol, operator(len(operator) - 1)) is False:
+        return False
+    return True
+#returns true if top of stack is greater or eq the precedence of scanned
+def precedence_ge(symbol, top_of_stack):
+    p = {}
+    p['*'] = 3
+    p['concat'] = 2
+    p['|'] = 1
+
+    if p[top_of_stack] >= p[symbol]:
+        return True
+    return False
+
 
 #push operand onto stack
 #this is done
