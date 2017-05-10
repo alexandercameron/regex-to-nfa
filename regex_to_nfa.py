@@ -10,13 +10,6 @@ COMP 370, Dr. Glick, USD, Spring 17
 
 import sys
 
-class Tree:
-
-    def __init__(self, nodes, root):
-
-        self.nodes = nodes
-        self.root = root
-
 class Node:
 
     def __init__(self, symbol, left, right):
@@ -40,31 +33,35 @@ def main(input_file, output_file):
 def find_concat(regular_expression):
 
     #these are the characters that you do not need to check if there is a concat following
-    operators = ['|','(','concat']
+    dont_check = ['|','(','concat']
 
-    #these are the characters that you do not insert a concat in front of after a terminal
-    f_operators = ['|', '*','concat', ')']
+    #these are the characters that you do not insert a concat in front
+    not_in_front = ['|', '*','concat', ')']
 
+    #This code checks if the symbol could need a concat following,
+    #and checks the next symbol to see if concat is needed
     i = 0
     length = len(regular_expression)
     while i < length:
 
         is_op = 0
-        for op in operators:
+        for op in dont_check:
 
             if regular_expression[i] is op:
                 is_op = 1
 
+        #If the symbol may need a concat, we check the next symbol...
         if is_op is 0:
 
             is_next_op = 0
-            for op in f_operators:
+            for op in not_in_front:
                 try:
                     if regular_expression[i+1] is op:
                         is_next_op = 1
                 except:
                     is_next_op = 1
 
+            #If we need to concat, we insert a concat symbol
             if is_next_op is 0:
                 regular_expression.insert(i+1, 'concat')
                 length = length + 1
@@ -145,7 +142,7 @@ def right_paren(symbol, operators, operands):
         if popped is '*':
 
             operand_pop = operands.pop()
-            tmp = Node(popped, 0, operand_pop)
+            tmp = Node(popped, -1, operand_pop)
             operands.append(tmp)
 
         else:
@@ -173,7 +170,7 @@ def operator(symbol, operator):
 
 def operand(symbol, operands):
 
-    n = Node(symbol, 0, 0)
+    n = Node(symbol, -1, -1)
     operands.append(n)
     return operands
 
