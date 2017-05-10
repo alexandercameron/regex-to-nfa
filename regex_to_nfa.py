@@ -34,8 +34,6 @@ def main(input_file, output_file):
     regular_expression = parameters['regular_expression']
     input_strings = parameters['input_strings']
 
-    regular_expression_with_concat = find_concat(regular_expression)
-    print regular_expression_with_concat
     parse_tree = make_parse_tree(regular_expression)
 
 
@@ -84,6 +82,7 @@ def readFile(input_file):
     parameters['alphabet'] = list(f.readline().strip("\n").replace(" ",""))
 
     parameters['regular_expression'] = list(f.readline().strip("\n").replace(" ",""))
+    parameters['regular_expression'] = find_concat(parameters['regular_expression'])
     input_strings = {}
 
     f.readline()
