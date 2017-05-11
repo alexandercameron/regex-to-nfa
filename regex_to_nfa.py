@@ -18,12 +18,88 @@ class Node:
         self.left = left
         self.right = right
 
+class NFA:
+    def __init__(self, states, transitions, accepts, start):
+        self.states = states
+        self.transitions = transitions
+        self.accepts = accepts
+        self.start = start
+
 def main(input_file, output_file):
 
     alphabet, regular_expression, input_strings = readFile(input_file)
-    print "Regular expression:\n", regular_expression
+    print "Regular expression:\n", regular_expression,"\n"
     parse_tree = make_parse_tree(regular_expression)
 
+    dfs_list = []
+    a = [parse_tree]
+
+    #dfs_list = unpack_node_list(dfs(a , dfs_list))
+
+    make_nfa(parse_tree, alphabet)
+
+def make_nfa(parse_tree, alphabet):
+
+    root = parse_tree
+    symbol = parse_tree.symbol
+
+    in_alphabet = 0
+    for al in alphabet:
+        if al is symbol:
+            in_alphabet = 1
+
+    if in_alphabet is 0:
+        leafs_needed = 0
+        if symbol is '*':
+            leafs_needed = 1
+        elif symbol is '|':
+            leafs_needed = 2
+        elif symbol is 'concat':
+            leafs_needed = 2
+
+        while leafs_needed > 0:
+            if parse_tree.left is not -1:
+                if symbol_in_alphabet(parse_tree.left.symbol, alphabet):
+                    #print "leaf found"
+                    leafs_needed = leafs_needed - 1
+                    make_nfa(parse_tree.left, alphabet)
+            if parse_tree.right is not -1:
+                if symbol_in_alphabet(parse_tree.right.symbol, alphabet):
+                    #print "leaf found"
+                    leafs_needed = leafs_needed -1
+
+    else:
+
+        #print "in alphabet"
+        NFA_leaf = make_nfa_for_leaf(symbol, alphabet)
+
+def make_nfa_for_leaf(symbol, alphabet):
+
+    states = [1,2]
+    accepts = [2]
+    start_state = [1]
+    transitions = {}
+
+    i = 1
+    while i < len(states) + 1:
+        transitions[i] = {}
+        i = i + 1
+
+    i = 1
+    while i < len(states) + 1:
+        for letter in alphabet:
+            transitions[i][letter] = -1
+        i = i + 1
+
+    transitions[1][symbol] = 2
+
+    return NFA(states, transitions, accepts, start_state)
+
+def symbol_in_alphabet(symbol, alphabet):
+    for al in alphabet:
+        if symbol is al:
+            return True
+    return False
 
 def readFile(input_file):
 
@@ -47,7 +123,6 @@ def readFile(input_file):
         i = i + 1
 
     return alphabet, regular_expression, input_strings
-
 
 def find_concat(regular_expression):
 
@@ -89,6 +164,11 @@ def find_concat(regular_expression):
 
     return regular_expression
 
+def unpack_node_list(node_list):
+    new_list = []
+    for x in node_list:
+        new_list.append(x.symbol)
+    return new_list
 
 def make_parse_tree(regular_expression):
 
@@ -124,32 +204,39 @@ def make_parse_tree(regular_expression):
             operands = operand(symbol, operands)
 
 
-    operands = empty_operator(operators, operands)
+    operators, operands = empty_operator(operators, operands)
 
     q = []
     for x in operands:
         q.append(x)
-    #bfs(q)
 
-def bfs(q):
-    x = q.pop(0)
+    return operands[0]
 
-    print x.symbol
+def dfs(q, dfs_list):
+
+    x = q.pop()
+    dfs_list.append(x)
+    #print "symbol" , x.symbol
     try:
-        x.left.symbol
-        q.append(x.left)
-        print x.left.symbol
-    except:
-        print x.left
-    try:
-        x.right.symbol
+        a = x.right.symbol
         q.append(x.right)
-        print x.right.symbol
+        #print "right symbol", x.right.symbol
     except:
-        print x.right
+        #print "right", x.right
+        pass
+
+    try:
+        a = x.left.symbol
+        q.append(x.left)
+        #print "left symbol", x.left.symbol
+    except:
+        #print "left", x.left
+        pass
 
     if len(q) is not 0:
-        bfs(q)
+        dfs_list = dfs(q, dfs_list)
+
+    return dfs_list
 
 def empty_operator(operators, operands):
     while len(operators) > 0:
@@ -162,7 +249,7 @@ def empty_operator(operators, operands):
             tmp = Node(popped_op, left_pop, right_pop)
 
         operands.append(tmp)
-    return operands
+    return operators, operands
 
 #if a left paren if encountered, put it on the stack
 #this is done
@@ -170,7 +257,6 @@ def left_paren(symbol, operators):
 
     operators.append(symbol)
     return operators
-
 
 #i think this is done? need to do operator to check...
 def right_paren(symbol, operators, operands):
@@ -198,7 +284,6 @@ def right_paren(symbol, operators, operands):
 
     return operands, operators
 
-
 def until_empty_or_left(operators):
 
     if len(operators) is 0:
@@ -206,7 +291,6 @@ def until_empty_or_left(operators):
     if operators[len(operators)-1] is '(':
         return False
     return True
-
 
 def operator(symbol, operators, operands):
 
@@ -238,7 +322,6 @@ def operator(symbol, operators, operands):
 
     return operators, operands
 
-
 def not_empty_and_precedence(symbol, operator):
 
     if len(operator) is 0:
@@ -258,7 +341,6 @@ def precedence_ge(symbol, top_of_stack):
     if p[top_of_stack] >= p[symbol]:
         return True
     return False
-
 
 #push operand onto stack
 #this is done
