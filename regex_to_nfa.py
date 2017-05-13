@@ -18,33 +18,194 @@ class Node:
         self.left = left
         self.right = right
 
+class NFA:
+    def __init__(self, states, transitions, accepts, start, alphabet):
+        self.states = states
+        self.transitions = transitions
+        self.accepts = accepts
+        self.start = start
+        self.alphabet = alphabet
+
+class DFA_State:
+    def __init__(self, states, transitions):
+        self.states = states
+        self.transitions = transitions
+
 def main(input_file, output_file):
 
-    alphabet, regular_expression, input_strings = readFile(input_file)
-    print "Regular expression:\n", regular_expression,"\n"
+    alphabet, regular_expression, input_strings = _readFile(input_file)
+
+    print input_strings
+
     parse_tree = make_parse_tree(regular_expression)
 
-    dfs_list = []
-    a = [parse_tree]
+    my_NFA = make_nfa(parse_tree, alphabet)
 
-    dfs_list = unpack_node_list(dfs(a , dfs_list))
+    DFA = {}
+    DFA = make_dfa_state(my_NFA, DFA, 0)
 
-    NFA_a = make_nfa(parse_tree, alphabet)
+    need_to_update = []
+    for state in DFA:
+        if state is not -1:
+            if DFA[state].transitions is -1:
+                need_to_update.append(state)
 
-    print NFA_a.__dict__
+    while len(need_to_update) is not 0:
+        for state in need_to_update:
+            DFA = make_dfa_state(my_NFA, DFA, state)
+
+        need_to_update = []
+        for state_index in DFA:
+            is_neg_1 = 0
+            if len(DFA[state_index].states) is 1:
+                for state in DFA[state_index].states:
+                    if state is -1:
+                        is_neg_1 = 1
+            if is_neg_1 is not 1:
+                if DFA[state_index].transitions is -1:
+                    need_to_update.append(state_index)
+
+    for string in input_strings:
+        if run_string(DFA, input_strings[string], my_NFA.accepts) is True:
+            print "true"
+        else:
+            print "false"
+
+def run_string(DFA, string, accepts):
+    string = list(string)
+    curr = 0
+    for letter in string:
+        for x in DFA[DFA[curr].transitions[letter]].states:
+            if x is -1:
+                return False
+        curr = DFA[curr].transitions[letter]
+    a = 0
+    for nfastate in DFA[curr].states:
+        if nfastate in accepts:
+            a = 1
+            return True
+    if a is 0:
+        return False
+
+def make_dfa_state(nfa, DFA, id_for_new_state):
+    curr_states = []
+    if len(DFA) is 0:
+        for start_state in nfa.start:
+            curr_states.append(start_state)
+    else:
+        curr_states = DFA[id_for_new_state].states
+
+    possible_states = []
+
+    new_transitions = {}
+
+    for single_state in curr_states:
+        possible_states.append(single_state)
+        possible_states = _find_epsilons(single_state, nfa.transitions, possible_states)
+
+        possible_states = remove_duplicates(possible_states, nfa.alphabet)
+
+        for symbol in nfa.alphabet:
+            new_transitions[symbol] = []
+        for one_possible in possible_states:
+            for symbol in nfa.alphabet:
+                try:
+                    for tran_state in nfa.transitions[int(one_possible)][symbol]:
+                        new_transitions[symbol].append(tran_state)
+                        new_transitions[symbol] = _find_epsilons(tran_state, nfa.transitions, new_transitions[symbol])
+                except:
+                    new_transitions[symbol].append(-1)
+                new_transitions[symbol] = remove_neg_1(new_transitions[symbol])
+                new_transitions[symbol] = remove_duplicates(new_transitions[symbol], nfa.alphabet)
+
+        trans = {}
+        trans_id = len(DFA) + 1
+        for symbol in nfa.alphabet:
+            trans[symbol] = -1
+            a = does_state_exist(new_transitions[symbol], DFA)
+            b = is_state_self(new_transitions[symbol], possible_states)
+            if b is True:
+                trans[symbol] = id_for_new_state
+            elif a is -1:
+                trans[symbol] = trans_id
+                DFA[trans_id] = DFA_State(new_transitions[symbol], -1)
+                trans_id = trans_id + 1
+            else:
+                trans[symbol] = a
+        DFA[id_for_new_state] = DFA_State(possible_states, trans)
+
+    return DFA
+
+def is_state_self(list, self):
+    if len(list) is len(self):
+        counterpart = 0
+        for x in list:
+            for y in self:
+                if x is y:
+                    counterpart = counterpart + 1
+        if counterpart is len(self):
+            return True
+    return False
+
+def remove_duplicates(possible_states, alphabet):
+    t = []
+
+    for symbol in alphabet:
+        for x in possible_states:
+            if x not in t:
+                t.append(x)
+
+    return t
+
+def does_state_exist(list, DFA):
+    for dfa_index in DFA:
+        if len(list) is len(DFA[dfa_index].states):
+            counterpart = 0
+
+            for state in DFA[dfa_index].states:
+                for member_of_my_list in list:
+                    if member_of_my_list is state:
+                        counterpart = counterpart + 1
+            if counterpart is len(list):
+                return dfa_index
+
+    return -1
+
+def remove_neg_1(transitions):
+    for state in transitions:
+        if len(transitions) > 1:
+            if state is -1:
+                transitions.remove(state)
+    return transitions
+
+def _find_epsilons(state, transitions, epsilons):
+
+    if state is -1:
+        return epsilons
+
+
+    for trans_state in transitions[int(state)]['e']:
+        if trans_state is not -1:
+            epsilons.append(trans_state)
+            try:
+                epsilons = _find_epsilons(trans_state, transitions, epsilons)
+            except:
+                pass
+    return epsilons
 
 def make_nfa(parse_tree, alphabet):
 
     tree = parse_tree
-    print tree.symbol
 
-    if symbol_in_alphabet(tree.symbol, alphabet):
+    curr_nfa = -1 #This instantiates the curr_nfa variable, if -1 is returned, something went wrong
+
+    if _symbol_in_alphabet(tree.symbol, alphabet):
         curr_nfa = make_nfa_leaf(tree.symbol, alphabet)
 
     elif tree.symbol is 'e':
         curr_nfa = make_nfa_epsilon(tree.symbol, alphabet)
 
-    elif tree.sybmol is 'N':
+    elif tree.symbol is 'N':
         curr_nfa = make_nfa_empty_set(tree.symbol, alphabet)
 
     elif tree.symbol is '*':
@@ -57,14 +218,6 @@ def make_nfa(parse_tree, alphabet):
         curr_nfa = concat_nfas(make_nfa(tree.left, alphabet), make_nfa(tree.right, alphabet))
 
     return curr_nfa
-
-class NFA:
-    def __init__(self, states, transitions, accepts, start, alphabet):
-        self.states = states
-        self.transitions = transitions
-        self.accepts = accepts
-        self.start = start
-        self.alphabet = alphabet
 
 def make_nfa_leaf(symbol, alphabet):
     states = [1,2]
@@ -92,7 +245,7 @@ def make_nfa_leaf(symbol, alphabet):
     return NFA(states, transitions, accepts, start_state, alphabet)
 
 def make_nfa_epsilon(symbol, alphabet):
-    print alphabet
+
     states = [1]
     start = [1]
     accepts = [1]
@@ -264,13 +417,13 @@ def star_nfa(nfa_a):
             new_transitions[accept_a + 1]['e'].append(start_a + 1)
     return NFA(new_states, new_transitions, new_accepts, new_start, nfa_a.alphabet)
 
-def symbol_in_alphabet(symbol, alphabet):
+def _symbol_in_alphabet(symbol, alphabet):
     for al in alphabet:
         if symbol is al:
             return True
     return False
 
-def readFile(input_file):
+def _readFile(input_file):
 
     parameters = {}
 
@@ -282,13 +435,21 @@ def readFile(input_file):
     regular_expression = find_concat(regular_expression)
     input_strings = {}
 
-    f.readline()
+    string = f.readline().strip("\n")
+    input_strings[0] = string
     string = f.readline().strip("\n")
 
-    i = 0
+    i = 1
     while len(string) > 0:
+
         input_strings[i] = string
         string = f.readline().strip("\n")
+        if len(string) is 0:
+            s2 = f.readline().strip("\n")
+            if len(s2) is not 0:
+                i = i + 1
+                input_strings[i] = string
+            string = s2
         i = i + 1
 
     return alphabet, regular_expression, input_strings
@@ -430,7 +591,7 @@ def left_paren(symbol, operators):
 #i think this is done? need to do operator to check...
 def right_paren(symbol, operators, operands):
 
-    while until_empty_or_left(operators) is True :
+    while _until_empty_or_left(operators) is True :
 
         popped = operators.pop()
 
@@ -453,7 +614,7 @@ def right_paren(symbol, operators, operands):
 
     return operands, operators
 
-def until_empty_or_left(operators):
+def _until_empty_or_left(operators):
 
     if len(operators) is 0:
         return False
@@ -466,7 +627,7 @@ def operator(symbol, operators, operands):
     #as long as the stack is not empty, and the top of the stack
     #is an operator whose precedence is >= the precedence of
     #the operator just scanned...
-    if not_empty_and_precedence(symbol, operators) :
+    if _not_empty_and_precedence(symbol, operators) :
         #pop the operator off the stack and create a syntax
         #tree node from it (popping its operands off the operand stack)
         #and push the new syntax tree node back onto the operand stack
@@ -491,16 +652,16 @@ def operator(symbol, operators, operands):
 
     return operators, operands
 
-def not_empty_and_precedence(symbol, operator):
+def _not_empty_and_precedence(symbol, operator):
 
     if len(operator) is 0:
         return False
-    if precedence_ge(symbol, operator[len(operator) - 1]) is False:
+    if _precedence_greater_or_equal(symbol, operator[len(operator) - 1]) is False:
         return False
     return True
 
 #returns true if top of stack is greater or eq the precedence of scanned
-def precedence_ge(symbol, top_of_stack):
+def _precedence_greater_or_equal(symbol, top_of_stack):
     p = {}
     p['*'] = 3
     p['concat'] = 2
