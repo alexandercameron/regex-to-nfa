@@ -9,7 +9,9 @@ COMP 370, Dr. Glick, USD, Spring 17
 '''
 
 import sys
-
+'''
+a class that represents a Node in a tree
+'''
 class Node:
 
     def __init__(self, symbol, left, right):
@@ -17,7 +19,9 @@ class Node:
         self.symbol = symbol
         self.left = left
         self.right = right
-
+'''
+a class that represents an NFA
+'''
 class NFA:
     def __init__(self, states, transitions, accepts, start, alphabet):
         self.states = states
@@ -26,11 +30,17 @@ class NFA:
         self.start = start
         self.alphabet = alphabet
 
+'''
+a class that represents a state in the DFA
+'''
 class DFA_State:
     def __init__(self, states, transitions):
         self.states = states
         self.transitions = transitions
 
+'''
+The main driver of the program
+'''
 def main(input_file, output_file):
 
     alphabet, regular_expression, input_strings = _readFile(input_file ,output_file)
@@ -71,6 +81,9 @@ def main(input_file, output_file):
         else:
             f.write("false\n")
 
+'''
+A function that runs a string on a DFA
+'''
 def run_string(DFA, string, accepts):
     string = list(string)
     curr = 0
@@ -87,6 +100,9 @@ def run_string(DFA, string, accepts):
     if a is 0:
         return False
 
+'''
+A function that makes a DFA State
+'''
 def make_dfa_state(nfa, DFA, id_for_new_state):
     curr_states = []
     if len(DFA) is 0:
@@ -136,6 +152,9 @@ def make_dfa_state(nfa, DFA, id_for_new_state):
 
     return DFA
 
+'''
+Helper function, checks if the state has a self transition
+'''
 def is_state_self(list, self):
     if len(list) is len(self):
         counterpart = 0
@@ -147,6 +166,9 @@ def is_state_self(list, self):
             return True
     return False
 
+'''
+Removes duplicates from the list of possible NFA states
+'''
 def remove_duplicates(possible_states, alphabet):
     t = []
 
@@ -157,6 +179,9 @@ def remove_duplicates(possible_states, alphabet):
 
     return t
 
+'''
+A function that returns if the DFA state has already been created
+'''
 def does_state_exist(list, DFA):
     for dfa_index in DFA:
         if len(list) is len(DFA[dfa_index].states):
@@ -171,6 +196,9 @@ def does_state_exist(list, DFA):
 
     return -1
 
+'''
+Removes -1 transitions from lists > 1 element
+'''
 def remove_neg_1(transitions):
     for state in transitions:
         if len(transitions) > 1:
@@ -178,6 +206,9 @@ def remove_neg_1(transitions):
                 transitions.remove(state)
     return transitions
 
+'''
+Helper function, finds all possible epsilon transitions
+'''
 def _find_epsilons(state, transitions, epsilons):
 
     if state is -1:
@@ -193,6 +224,9 @@ def _find_epsilons(state, transitions, epsilons):
                 pass
     return epsilons
 
+'''
+A function that makes an NFA
+'''
 def make_nfa(parse_tree, alphabet):
 
     tree = parse_tree
@@ -219,6 +253,9 @@ def make_nfa(parse_tree, alphabet):
 
     return curr_nfa
 
+'''
+Constructs a leaf NFA
+'''
 def make_nfa_leaf(symbol, alphabet):
     states = [1,2]
     accepts = [2]
@@ -244,6 +281,9 @@ def make_nfa_leaf(symbol, alphabet):
 
     return NFA(states, transitions, accepts, start_state, alphabet)
 
+'''
+Constructs an NFA for e
+'''
 def make_nfa_epsilon(symbol, alphabet):
 
     states = [1]
@@ -257,6 +297,9 @@ def make_nfa_epsilon(symbol, alphabet):
         transitions[state]['e'] = [1]
     return NFA(states, transitions, accepts, start, alphabet)
 
+'''
+Constructs an NFA for N
+'''
 def make_nfa_empty_set(symbol, alphabet):
     states = [1]
     start = [1]
@@ -269,6 +312,9 @@ def make_nfa_empty_set(symbol, alphabet):
         transitions[state]['e'] = [-1]
     return NFA(states, transitions, accepts, start, alphabet)
 
+'''
+Constructs an NFA that concats two NFAs
+'''
 def concat_nfas(nfa_a, nfa_b):
 
     new_states = []
@@ -313,6 +359,9 @@ def concat_nfas(nfa_a, nfa_b):
 
     return NFA(new_states, new_transitions, new_accepts, new_starts, nfa_a.alphabet)
 
+'''
+Constructs an NFA that unions two NFAs
+'''
 def union_nfas(nfa_a, nfa_b):
 
     #FINDS THE NEW LIST OF STATES
@@ -374,6 +423,9 @@ def union_nfas(nfa_a, nfa_b):
 
     return NFA(states, new_transitions, new_accepts, new_start, nfa_a.alphabet)
 
+'''
+Constructs an NFA that stars an NFA
+'''
 def star_nfa(nfa_a):
 
     #the new start state will be 1
@@ -417,12 +469,18 @@ def star_nfa(nfa_a):
             new_transitions[accept_a + 1]['e'].append(start_a + 1)
     return NFA(new_states, new_transitions, new_accepts, new_start, nfa_a.alphabet)
 
+'''
+Helper function to determine if symbol is in the alphabet
+'''
 def _symbol_in_alphabet(symbol, alphabet):
     for al in alphabet:
         if symbol is al:
             return True
     return False
 
+'''
+Helper function, reads in the file and gives alphabet, regular expression, and input strings
+'''
 def _readFile(input_file, outfile):
 
     parameters = {}
@@ -459,10 +517,16 @@ def _readFile(input_file, outfile):
         exit(0)
     return alphabet, regular_expression, input_strings
 
+'''
+Checks if regular expression is valid
+'''
 def valid(regular_expression):
     if balanced_parens(regular_expression) is False:
         return False
 
+'''
+Checks if regular expression has balanced parentheses
+'''
 def balanced_parens(regular_expression):
     left = []
     for letter in regular_expression:
@@ -477,7 +541,9 @@ def balanced_parens(regular_expression):
         return False
     return True
 
-
+'''
+Makes implied concats explicit
+'''
 def find_concat(regular_expression):
 
     #these are the characters that you do not need to check if there is a concat following
@@ -518,12 +584,18 @@ def find_concat(regular_expression):
 
     return regular_expression
 
-def unpack_node_list(node_list):
+'''
+Helper function for a DFS
+'''
+def _unpack_node_list(node_list):
     new_list = []
     for x in node_list:
         new_list.append(x.symbol)
     return new_list
 
+'''
+Constructs a parse tree
+'''
 def make_parse_tree(regular_expression ,outfile):
 
     parse_tree = []
@@ -576,6 +648,9 @@ def make_parse_tree(regular_expression ,outfile):
 
     return operands[0]
 
+'''
+Runs a DFS on the parse tree
+'''
 def dfs(q, dfs_list):
 
     x = q.pop()
@@ -602,6 +677,9 @@ def dfs(q, dfs_list):
 
     return dfs_list
 
+'''
+Empties the operator stack
+'''
 def empty_operator(operators, operands):
     while len(operators) > 0:
         popped_op = operators.pop()
@@ -615,14 +693,17 @@ def empty_operator(operators, operands):
         operands.append(tmp)
     return operators, operands
 
-#if a left paren if encountered, put it on the stack
-#this is done
+'''
+Defines parse tree behaivor when a left paren is encountered
+'''
 def left_paren(symbol, operators):
 
     operators.append(symbol)
     return operators
 
-#i think this is done? need to do operator to check...
+'''
+Defines parse tree behaivor when a right paren is encountered
+'''
 def right_paren(symbol, operators, operands):
 
     while _until_empty_or_left(operators) is True :
@@ -648,6 +729,9 @@ def right_paren(symbol, operators, operands):
 
     return operands, operators
 
+'''
+Helper function, checks if stack if empty or top is a left paren
+'''
 def _until_empty_or_left(operators):
 
     if len(operators) is 0:
@@ -656,6 +740,9 @@ def _until_empty_or_left(operators):
         return False
     return True
 
+'''
+Defines parse tree behaivor when an operator is encountered
+'''
 def operator(symbol, operators, operands):
 
     #as long as the stack is not empty, and the top of the stack
@@ -686,6 +773,9 @@ def operator(symbol, operators, operands):
 
     return operators, operands
 
+'''
+Checks if the stack is not empty and the top for an operator of >= precedence
+'''
 def _not_empty_and_precedence(symbol, operator):
 
     if len(operator) is 0:
@@ -694,7 +784,9 @@ def _not_empty_and_precedence(symbol, operator):
         return False
     return True
 
-#returns true if top of stack is greater or eq the precedence of scanned
+'''
+Helper function, determines if the top of stack has >= precedence
+'''
 def _precedence_greater_or_equal(symbol, top_of_stack):
     p = {}
     p['*'] = 3
@@ -706,8 +798,9 @@ def _precedence_greater_or_equal(symbol, top_of_stack):
         return True
     return False
 
-#push operand onto stack
-#this is done
+'''
+Defines parse tree behaivor when an operand is encountered
+'''
 def operand(symbol, operands):
 
     n = Node(symbol, -1, -1)
