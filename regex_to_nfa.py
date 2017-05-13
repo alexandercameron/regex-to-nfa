@@ -33,13 +33,12 @@ class DFA_State:
 
 def main(input_file, output_file):
 
-    alphabet, regular_expression, input_strings = _readFile(input_file)
+    alphabet, regular_expression, input_strings = _readFile(input_file ,output_file)
 
-    print input_strings
-
-    parse_tree = make_parse_tree(regular_expression)
+    parse_tree = make_parse_tree(regular_expression, output_file)
 
     my_NFA = make_nfa(parse_tree, alphabet)
+
 
     DFA = {}
     DFA = make_dfa_state(my_NFA, DFA, 0)
@@ -65,11 +64,12 @@ def main(input_file, output_file):
                 if DFA[state_index].transitions is -1:
                     need_to_update.append(state_index)
 
+    f = open(output_file, 'w')
     for string in input_strings:
         if run_string(DFA, input_strings[string], my_NFA.accepts) is True:
-            print "true"
+            f.write("true\n")
         else:
-            print "false"
+            f.write("false\n")
 
 def run_string(DFA, string, accepts):
     string = list(string)
@@ -423,7 +423,7 @@ def _symbol_in_alphabet(symbol, alphabet):
             return True
     return False
 
-def _readFile(input_file):
+def _readFile(input_file, outfile):
 
     parameters = {}
 
@@ -452,7 +452,31 @@ def _readFile(input_file):
             string = s2
         i = i + 1
 
+    if valid(regular_expression) is False:
+        f = open(outfile, 'w')
+        f.write("Invalid Expression")
+        f.close()
+        exit(0)
     return alphabet, regular_expression, input_strings
+
+def valid(regular_expression):
+    if balanced_parens(regular_expression) is False:
+        return False
+
+def balanced_parens(regular_expression):
+    left = []
+    for letter in regular_expression:
+        if letter is '(':
+            left.append(letter)
+        elif letter is ')':
+            if len(left) > 0:
+                left.pop()
+            else:
+                return False
+    if len(left) > 0:
+        return False
+    return True
+
 
 def find_concat(regular_expression):
 
@@ -500,7 +524,7 @@ def unpack_node_list(node_list):
         new_list.append(x.symbol)
     return new_list
 
-def make_parse_tree(regular_expression):
+def make_parse_tree(regular_expression ,outfile):
 
     parse_tree = []
 
@@ -508,33 +532,43 @@ def make_parse_tree(regular_expression):
     operands = []
     i = 1
     for symbol in regular_expression:
+        try:
+            if symbol is '(':
 
-        if symbol is '(':
+                operators = left_paren(symbol, operators)
 
-            operators = left_paren(symbol, operators)
+            elif symbol is ')':
 
-        elif symbol is ')':
+                operands, operators = right_paren(symbol, operators, operands)
 
-            operands, operators = right_paren(symbol, operators, operands)
+            elif symbol == 'concat':
 
-        elif symbol == 'concat':
+                operators, operands = operator(symbol, operators, operands)
 
-            operators, operands = operator(symbol, operators, operands)
+            elif symbol is '|':
 
-        elif symbol is '|':
+                operators, operands = operator(symbol, operators, operands)
 
-            operators, operands = operator(symbol, operators, operands)
+            elif symbol is '*':
 
-        elif symbol is '*':
+                operators, operands = operator(symbol, operators, operands)
 
-            operators, operands = operator(symbol, operators, operands)
+            else:
+                operands = operand(symbol, operands)
+        except:
+            f = open(outfile, 'w')
+            f.write("Invalid Expression\n")
+            f.close()
+            exit(1)
 
-        else:
 
-            operands = operand(symbol, operands)
-
-
-    operators, operands = empty_operator(operators, operands)
+    try:
+        operators, operands = empty_operator(operators, operands)
+    except:
+        f = open(outfile, 'w')
+        f.write("Invalid Expression\n")
+        f.close()
+        exit(1)
 
     q = []
     for x in operands:
