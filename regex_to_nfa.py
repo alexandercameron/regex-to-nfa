@@ -36,10 +36,16 @@ def main(input_file, output_file):
 def make_nfa(parse_tree, alphabet):
 
     tree = parse_tree
-
     print tree.symbol
+
     if symbol_in_alphabet(tree.symbol, alphabet):
         curr_nfa = make_nfa_leaf(tree.symbol, alphabet)
+
+    elif tree.symbol is 'e':
+        curr_nfa = make_nfa_epsilon(tree.symbol, alphabet)
+
+    elif tree.sybmol is 'N':
+        curr_nfa = make_nfa_empty_set(tree.symbol, alphabet)
 
     elif tree.symbol is '*':
         curr_nfa = star_nfa(make_nfa(tree.right, alphabet))
@@ -51,6 +57,212 @@ def make_nfa(parse_tree, alphabet):
         curr_nfa = concat_nfas(make_nfa(tree.left, alphabet), make_nfa(tree.right, alphabet))
 
     return curr_nfa
+
+class NFA:
+    def __init__(self, states, transitions, accepts, start, alphabet):
+        self.states = states
+        self.transitions = transitions
+        self.accepts = accepts
+        self.start = start
+        self.alphabet = alphabet
+
+def make_nfa_leaf(symbol, alphabet):
+    states = [1,2]
+    accepts = [2]
+    start_state = [1]
+    transitions = {}
+
+    i = 1
+    while i < len(states) + 1:
+        transitions[i] = {}
+        i = i + 1
+
+    i = 1
+    while i < len(states) + 1:
+        for letter in alphabet:
+            transitions[i][letter] = []
+            transitions[i][letter].append(-1)
+        transitions[i]['e'] = []
+        transitions[i]['e'].append(-1)
+        i = i + 1
+
+    transitions[1][symbol] = []
+    transitions[1][symbol].append(2)
+
+    return NFA(states, transitions, accepts, start_state, alphabet)
+
+def make_nfa_epsilon(symbol, alphabet):
+    print alphabet
+    states = [1]
+    start = [1]
+    accepts = [1]
+    transitions = {}
+    for state in states:
+        transitions[state] = {}
+        for letter in alphabet:
+            transitions[state][letter] = [-1]
+        transitions[state]['e'] = [1]
+    return NFA(states, transitions, accepts, start, alphabet)
+
+def make_nfa_empty_set(symbol, alphabet):
+    states = [1]
+    start = [1]
+    accepts = []
+    transitions = {}
+    for state in states:
+        transitions[state] = {}
+        for letter in alphabet:
+            transitions[state][letter] = [-1]
+        transitions[state]['e'] = [-1]
+    return NFA(states, transitions, accepts, start, alphabet)
+
+def concat_nfas(nfa_a, nfa_b):
+
+    new_states = []
+    for x in range(1, len(nfa_b.states) + len(nfa_a.states) + 1):
+        new_states.append(x)
+
+
+    new_accepts = []
+    for accept_b in nfa_b.accepts:
+        new_accepts.append(accept_b + len(nfa_a.states))
+
+
+    new_starts = []
+    for start_a in nfa_a.start:
+        new_starts.append(start_a)
+
+    new_transitions = {}
+    for state_index in new_states:
+        new_transitions[state_index] = {}
+        for symbol in nfa_a.transitions[1]:
+            new_transitions[state_index][symbol] = []
+            if state_index <= len(nfa_a.states):
+                for trans_state in nfa_a.transitions[state_index][symbol]:
+                    if trans_state is not -1:
+                        new_transitions[state_index][symbol].append(trans_state)
+                    else:
+                        new_transitions[state_index][symbol].append(-1)
+
+                if symbol is 'e':
+                    for accept_a in nfa_a.accepts:
+                        if state_index is accept_a:
+                            for start_b in nfa_b.start:
+                                new_transitions[state_index][symbol].append(start_b + len(nfa_a.states))
+
+            else:
+                for trans_state in nfa_b.transitions[state_index - len(nfa_a.states)][symbol]:
+                    if trans_state is not -1:
+                        new_transitions[state_index][symbol].append(trans_state + len(nfa_a.states))
+                    else:
+                        new_transitions[state_index][symbol].append(-1)
+
+
+    return NFA(new_states, new_transitions, new_accepts, new_starts, nfa_a.alphabet)
+
+def union_nfas(nfa_a, nfa_b):
+
+    #FINDS THE NEW LIST OF STATES
+    states = []
+    for x in range(1, len(nfa_b.states) + len(nfa_a.states) + 2):
+        states.append(x)
+
+    #FINDS THE NEW LIST OF ACCEPTING STATES
+    new_accepts = []
+    for a_accepts in nfa_a.accepts:
+        new_accepts.append(a_accepts + 1)
+    for b_accepts in nfa_b.accepts:
+        new_accepts.append(b_accepts + len(nfa_a.states) + 1)
+
+    #THERE WILL BE A NEW START STATE
+    new_start = [1]
+
+    #FINDS THE NEW TRANSITIONS
+    new_transitions = {}
+    new_transitions[1] = {}
+
+    #Defines transitions for the start state (epsilons to the start states of A and B)
+    for symbol in nfa_a.transitions[1]:
+        if symbol is not 'e':
+            new_transitions[1][symbol] = []
+            new_transitions[1][symbol].append(-1)
+        else:
+            new_transitions[1][symbol] = []
+            for a_start in nfa_a.start:
+                new_transitions[1][symbol].append(a_start + 1)
+            for b_start in nfa_b.start:
+                new_transitions[1][symbol].append(b_start + len(nfa_a.states) + 1)
+
+    #Renumbers the transitions from NFAs A and B
+    state_num = 2
+    while state_num <= len(nfa_b.states) +len(nfa_a.states) + 1:
+        new_transitions[state_num] = {}
+        if state_num <= len(nfa_a.states) + 1:
+            for symbol in nfa_a.transitions[state_num -1]:
+                new_transitions[state_num][symbol] = []
+                for trans_state in nfa_a.transitions[state_num-1][symbol]:
+                    if trans_state is not -1:
+                        new_transitions[state_num][symbol].append(trans_state +1)
+                    else:
+                        new_transitions[state_num][symbol].append(-1)
+        else:
+            for symbol in nfa_b.transitions[state_num -len(nfa_a.states) - 1]:
+                new_transitions[state_num][symbol] = []
+                for trans_state in nfa_b.transitions[state_num- len(nfa_a.states) -1][symbol]:
+                    if trans_state is not -1:
+                        new_transitions[state_num][symbol].append(trans_state +len(nfa_a.states)+1)
+                    else:
+                        new_transitions[state_num][symbol].append(-1)
+
+
+
+        state_num = state_num + 1
+
+
+    return NFA(states, new_transitions, new_accepts, new_start, nfa_a.alphabet)
+
+def star_nfa(nfa_a):
+
+    #the new start state will be 1
+    new_start = [1]
+
+    new_states = [1]
+    for state in nfa_a.states:
+        new_states.append(state + 1)
+
+    new_accepts = [1]
+    for accept_a in nfa_a.accepts:
+        new_accepts.append(accept_a + 1)
+
+    new_transitions = {}
+    for state in new_states:
+        new_transitions[state] = {}
+
+    #Defines transitions for the start state
+    for symbol in nfa_a.transitions[1]:
+        new_transitions[1][symbol] = []
+        if symbol is 'e':
+            for start_a in nfa_a.start:
+                new_transitions[1][symbol].append(start_a + 1)
+        else:
+            new_transitions[1][symbol].append(-1)
+
+    #Defines transitions for the rest of the NFA
+    for state_a in nfa_a.transitions:
+        new_state = state_a + 1
+        for symbol in nfa_a.transitions[1]:
+            new_transitions[new_state][symbol] = []
+            for trans_state in nfa_a.transitions[state_a][symbol]:
+                if trans_state is not -1:
+                    new_transitions[new_state][symbol].append(trans_state + 1)
+                else:
+                    new_transitions[new_state][symbol].append(-1)
+
+    for accept_a in nfa_a.accepts:
+        new_transitions[accept_a + 1] ['e'] = []
+        for start_a in nfa_a.start:
+            new_transitions[accept_a + 1]['e'].append(start_a + 1)
+    return NFA(new_states, new_transitions, new_accepts, new_start, nfa_a.alphabet)
 
 def symbol_in_alphabet(symbol, alphabet):
     for al in alphabet:
@@ -225,7 +437,7 @@ def right_paren(symbol, operators, operands):
         if popped is '*':
 
             operand_pop = operands.pop()
-            tmp = Node(popped.symbol, -1, operand_pop)
+            tmp = Node(popped, -1, operand_pop)
             operands.append(tmp)
 
         else:
@@ -308,186 +520,6 @@ def operand(symbol, operands):
     operands.append(n)
 
     return operands
-
-class NFA:
-    def __init__(self, states, transitions, accepts, start):
-        self.states = states
-        self.transitions = transitions
-        self.accepts = accepts
-        self.start = start
-
-def make_nfa_leaf(symbol, alphabet):
-    states = [1,2]
-    accepts = [2]
-    start_state = [1]
-    transitions = {}
-
-    i = 1
-    while i < len(states) + 1:
-        transitions[i] = {}
-        i = i + 1
-
-    i = 1
-    while i < len(states) + 1:
-        for letter in alphabet:
-            transitions[i][letter] = []
-            transitions[i][letter].append(-1)
-        transitions[i]['e'] = []
-        transitions[i]['e'].append(-1)
-        i = i + 1
-
-    transitions[1][symbol] = []
-    transitions[1][symbol].append(2)
-
-    return NFA(states, transitions, accepts, start_state)
-
-def concat_nfas(nfa_a, nfa_b):
-
-    new_states = []
-    for x in range(1, len(nfa_b.states) + len(nfa_a.states) + 1):
-        new_states.append(x)
-
-
-    new_accepts = []
-    for accept_b in nfa_b.accepts:
-        new_accepts.append(accept_b + len(nfa_a.states))
-
-
-    new_starts = []
-    for start_a in nfa_a.start:
-        new_starts.append(start_a)
-
-    new_transitions = {}
-    for state_index in new_states:
-        new_transitions[state_index] = {}
-        for symbol in nfa_a.transitions[1]:
-            new_transitions[state_index][symbol] = []
-            if state_index <= len(nfa_a.states):
-                for trans_state in nfa_a.transitions[state_index][symbol]:
-                    if trans_state is not -1:
-                        new_transitions[state_index][symbol].append(trans_state)
-                    else:
-                        new_transitions[state_index][symbol].append(-1)
-
-                if symbol is 'e':
-                    for accept_a in nfa_a.accepts:
-                        if state_index is accept_a:
-                            for start_b in nfa_b.start:
-                                new_transitions[state_index][symbol].append(start_b + len(nfa_a.states))
-
-            else:
-                for trans_state in nfa_b.transitions[state_index - len(nfa_a.states)][symbol]:
-                    if trans_state is not -1:
-                        new_transitions[state_index][symbol].append(trans_state + len(nfa_b.states))
-                    else:
-                        new_transitions[state_index][symbol].append(-1)
-
-
-    return NFA(new_states, new_transitions, new_accepts, new_starts)
-
-def union_nfas(nfa_a, nfa_b):
-
-    #FINDS THE NEW LIST OF STATES
-    states = []
-    for x in range(1, len(nfa_b.states) + len(nfa_a.states) + 2):
-        states.append(x)
-
-    #FINDS THE NEW LIST OF ACCEPTING STATES
-    new_accepts = []
-    for a_accepts in nfa_a.accepts:
-        new_accepts.append(a_accepts + 1)
-    for b_accepts in nfa_b.accepts:
-        new_accepts.append(b_accepts + len(nfa_a.states) + 1)
-
-    #THERE WILL BE A NEW START STATE
-    new_start = [1]
-
-    #FINDS THE NEW TRANSITIONS
-    new_transitions = {}
-    new_transitions[1] = {}
-
-    #Defines transitions for the start state (epsilons to the start states of A and B)
-    for symbol in nfa_a.transitions[1]:
-        if symbol is not 'e':
-            new_transitions[1][symbol] = []
-            new_transitions[1][symbol].append(-1)
-        else:
-            new_transitions[1][symbol] = []
-            for a_start in nfa_a.start:
-                new_transitions[1][symbol].append(a_start + 1)
-            for b_start in nfa_b.start:
-                new_transitions[1][symbol].append(b_start + len(nfa_a.states) + 1)
-
-    #Renumbers the transitions from NFAs A and B
-    state_num = 2
-    while state_num <= len(nfa_b.states) +len(nfa_a.states) + 1:
-        new_transitions[state_num] = {}
-        if state_num <= len(nfa_a.states) + 1:
-            for symbol in nfa_a.transitions[state_num -1]:
-                new_transitions[state_num][symbol] = []
-                for trans_state in nfa_a.transitions[state_num-1][symbol]:
-                    if trans_state is not -1:
-                        new_transitions[state_num][symbol].append(trans_state +1)
-                    else:
-                        new_transitions[state_num][symbol].append(-1)
-        else:
-            for symbol in nfa_b.transitions[state_num -len(nfa_a.states) - 1]:
-                new_transitions[state_num][symbol] = []
-                for trans_state in nfa_b.transitions[state_num- len(nfa_a.states) -1][symbol]:
-                    if trans_state is not -1:
-                        new_transitions[state_num][symbol].append(trans_state +len(nfa_a.states)+1)
-                    else:
-                        new_transitions[state_num][symbol].append(-1)
-
-
-
-        state_num = state_num + 1
-
-
-    return NFA(states, new_transitions, new_accepts, new_start)
-
-def star_nfa(nfa_a):
-
-    #the new start state will be 1
-    new_start = [1]
-
-    new_states = [1]
-    for state in nfa_a.states:
-        new_states.append(state + 1)
-
-    new_accepts = [1]
-    for accept_a in nfa_a.accepts:
-        new_accepts.append(accept_a + 1)
-
-    new_transitions = {}
-    for state in new_states:
-        new_transitions[state] = {}
-
-    #Defines transitions for the start state
-    for symbol in nfa_a.transitions[1]:
-        new_transitions[1][symbol] = []
-        if symbol is 'e':
-            for start_a in nfa_a.start:
-                new_transitions[1][symbol].append(start_a + 1)
-        else:
-            new_transitions[1][symbol].append(-1)
-
-    #Defines transitions for the rest of the NFA
-    for state_a in nfa_a.transitions:
-        new_state = state_a + 1
-        for symbol in nfa_a.transitions[1]:
-            new_transitions[new_state][symbol] = []
-            for trans_state in nfa_a.transitions[state_a][symbol]:
-                if trans_state is not -1:
-                    new_transitions[new_state][symbol].append(trans_state + 1)
-                else:
-                    new_transitions[new_state][symbol].append(-1)
-
-    for accept_a in nfa_a.accepts:
-        new_transitions[accept_a + 1] ['e'] = []
-        for start_a in nfa_a.start:
-            new_transitions[accept_a + 1]['e'].append(start_a + 1)
-    return NFA(new_states, new_transitions, new_accepts, new_start)
 
 if __name__ == '__main__':
     main(sys.argv[1], sys.argv[2])
